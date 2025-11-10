@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+.claude/
+archive/
+settings.json
+.python-version

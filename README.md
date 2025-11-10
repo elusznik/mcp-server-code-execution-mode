@@ -329,7 +329,7 @@ Selectable via RPC: ('stub',)
 
 ## License
 
-MIT License
+GPLv3 License
 
 ## Support
 
