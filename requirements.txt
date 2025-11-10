@@ -1,6 +1,7 @@
 # MCP Code Execution Server Requirements
 # Core MCP SDK
 mcp>=1.0.0
+toon-format>=0.9.0b1
 
 # Development dependencies (optional)
 pytest>=7.0.0

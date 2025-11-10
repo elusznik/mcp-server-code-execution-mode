@@ -163,7 +163,7 @@ class StubIntegrationTests(unittest.IsolatedAsyncioTestCase):
         )
 
         try:
-            output = await self.bridge.execute_code(
+            result = await self.bridge.execute_code(
                 code,
                 servers=["stub"],
                 timeout=30,
@@ -175,7 +175,10 @@ class StubIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 f"STDERR:\n{exc.stderr}\n"
             )
 
-        self.assertIn("✅ Success", output)
+        self.assertTrue(result.success)
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
 
         client = self.bridge.clients.get("stub")
         if client:

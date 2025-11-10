@@ -41,6 +41,7 @@ This bridge implements the **"Code Execution with MCP"** pattern—a revolutiona
   ```
 - **Top-level await** - Modern Python patterns
 - **Type-safe** - Proper signatures and docs
+- **TOON responses** - Tool outputs are emitted as TOON code blocks for token-efficient prompting
 
 ## Quick Start
 

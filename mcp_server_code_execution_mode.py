@@ -18,6 +18,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Awaitable, Callable, Dict, List, Optional, Sequence
 
+try:  # Prefer the official encoder when available
+    from toon_format import encode as _toon_encode
+except ImportError:  # pragma: no cover - fallback for environments without toon
+    _toon_encode = None
+
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.server import Server
@@ -84,6 +89,72 @@ class MCPServerInfo:
     command: str
     args: List[str]
     env: Dict[str, str]
+
+
+def _split_output_lines(stream: Optional[str]) -> List[str]:
+    """Return a newline-preserving list for stdout/stderr fields."""
+
+    if not stream:
+        return []
+    return stream.splitlines()
+
+
+def _render_toon_block(payload: Dict[str, object]) -> str:
+    """Encode a payload in TOON format, falling back to JSON when unavailable."""
+
+    if _toon_encode is not None:
+        try:
+            body = _toon_encode(payload)
+        except Exception:  # pragma: no cover - defensive fallback
+            logger.debug("Failed to encode payload as TOON", exc_info=True)
+        else:
+            body = body.rstrip()
+            return f"```toon\n{body}\n```" if body else "```toon\n```"
+
+    fallback = json.dumps(payload, indent=2, sort_keys=True)
+    return f"```json\n{fallback}\n```"
+
+
+def _build_response_payload(
+    *,
+    status: str,
+    summary: str,
+    exit_code: Optional[int] = None,
+    stdout: Optional[str] = None,
+    stderr: Optional[str] = None,
+    servers: Optional[Sequence[str]] = None,
+    error: Optional[str] = None,
+    timeout_seconds: Optional[int] = None,
+) -> Dict[str, object]:
+    """Create a structured payload for TOON encoding."""
+
+    payload: Dict[str, object] = {
+        "status": status,
+        "summary": summary,
+    }
+
+    if exit_code is not None:
+        payload["exitCode"] = exit_code
+    if servers:
+        payload["servers"] = list(servers)
+
+    payload["stdout"] = _split_output_lines(stdout)
+    payload["stderr"] = _split_output_lines(stderr)
+
+    if error:
+        payload["error"] = error
+    if timeout_seconds is not None:
+        payload["timeoutSeconds"] = timeout_seconds
+
+    return payload
+
+
+def _build_tool_response(**kwargs: object) -> List[Dict[str, object]]:
+    """Render a TOON (or JSON fallback) message for tool responses."""
+
+    payload = _build_response_payload(**kwargs)
+    message = _render_toon_block(payload)
+    return [{"content": [{"type": "text", "text": message}]}]
 
 
 def _sanitize_identifier(value: str, *, default: str) -> str:
@@ -1056,7 +1127,7 @@ class MCPBridge:
         code: str,
         servers: Optional[Sequence[str]] = None,
         timeout: int = DEFAULT_TIMEOUT,
-    ) -> str:
+    ) -> SandboxResult:
         await self.discover_servers()
         request_timeout = max(1, min(MAX_TIMEOUT, timeout))
         requested_servers = list(dict.fromkeys(servers or []))
@@ -1082,7 +1153,7 @@ class MCPBridge:
                 stdout=result.stdout,
                 stderr=result.stderr,
             )
-        return result.stdout or "✅ Success (no output)"
+        return result
 
 
 bridge = MCPBridge()
@@ -1129,40 +1200,79 @@ async def list_tools() -> List[Tool]:
 @app.call_tool()
 async def call_tool(name: str, arguments: Dict[str, object]) -> List[Dict[str, object]]:
     if name != "run_python":
-        return [{"content": [{"type": "text", "text": f"Unknown tool: {name}"}]}]
+        return _build_tool_response(
+            status="error",
+            summary=f"Unknown tool: {name}",
+            error=f"Unknown tool: {name}",
+        )
 
     code = arguments.get("code")
     if not isinstance(code, str) or not code.strip():
-        return [{"content": [{"type": "text", "text": "❌ Missing 'code' argument"}]}]
+        return _build_tool_response(
+            status="validation_error",
+            summary="Missing 'code' argument",
+            error="Missing 'code' argument",
+        )
 
     servers = arguments.get("servers", [])
     if not isinstance(servers, list):
-        return [{"content": [{"type": "text", "text": "❌ 'servers' must be a list"}]}]
+        return _build_tool_response(
+            status="validation_error",
+            summary="'servers' must be a list",
+            error="'servers' must be a list",
+        )
     server_list = [str(server) for server in servers]
 
     timeout_value = arguments.get("timeout", DEFAULT_TIMEOUT)
     if not isinstance(timeout_value, int):
-        return [{"content": [{"type": "text", "text": "❌ 'timeout' must be an integer"}]}]
+        return _build_tool_response(
+            status="validation_error",
+            summary="'timeout' must be an integer",
+            error="'timeout' must be an integer",
+        )
     timeout_value = max(1, min(MAX_TIMEOUT, timeout_value))
 
     try:
-        output = await bridge.execute_code(code, server_list, timeout_value)
-        return [{"content": [{"type": "text", "text": output}]}]
+        result = await bridge.execute_code(code, server_list, timeout_value)
+        summary = "Success"
+        if not result.stdout and not result.stderr:
+            summary = "Success (no output)"
+        return _build_tool_response(
+            status="success",
+            summary=summary,
+            exit_code=result.exit_code,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            servers=server_list,
+        )
     except SandboxTimeout as exc:
-        message = f"❌ Timeout: execution exceeded {timeout_value}s"
-        details = "".join(filter(None, [exc.stdout, exc.stderr])).strip()
-        if details:
-            message = f"{message}\n{details}"
-        return [{"content": [{"type": "text", "text": message}]}]
+        summary = f"Timeout: execution exceeded {timeout_value}s"
+        return _build_tool_response(
+            status="timeout",
+            summary=summary,
+            stdout=exc.stdout,
+            stderr=exc.stderr,
+            servers=server_list,
+            error=str(exc),
+            timeout_seconds=timeout_value,
+        )
     except SandboxError as exc:
-        message = f"❌ Sandbox error: {exc}"
-        details = "".join(filter(None, [exc.stdout, exc.stderr])).strip()
-        if details:
-            message = f"{message}\n{details}"
-        return [{"content": [{"type": "text", "text": message}]}]
+        summary = f"Sandbox error: {exc}"
+        return _build_tool_response(
+            status="error",
+            summary=summary,
+            stdout=exc.stdout,
+            stderr=exc.stderr,
+            servers=server_list,
+            error=str(exc),
+        )
     except Exception as exc:  # pragma: no cover
         logger.error("Unexpected failure", exc_info=True)
-        return [{"content": [{"type": "text", "text": f"❌ Unexpected failure: {exc}"}]}]
+        return _build_tool_response(
+            status="error",
+            summary="Unexpected failure",
+            error=str(exc),
+        )
 
 
 async def main() -> None:
