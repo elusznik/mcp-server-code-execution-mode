@@ -88,8 +88,14 @@ uv run python mcp_server_code_execution_mode.py
 {
   "mcpServers": {
     "mcp-server-code-execution-mode": {
-      "command": "uv",
-      "args": ["run", "python", "/absolute/path/to/mcp_server_code_execution_mode.py"],
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/elusznik/mcp-server-code-execution-mode",
+        "mcp-server-code-execution-mode",
+        "run"
+      ],
       "env": {
         "MCP_BRIDGE_RUNTIME": "podman"
       }

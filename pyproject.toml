@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["mcp_server_code_execution_mode"]
+py-modules = ["mcp_server_code_execution_mode", "main"]
 
 [project.scripts]
 # This creates the command: mcp-server-code-execution-mode
