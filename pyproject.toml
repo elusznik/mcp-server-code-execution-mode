@@ -13,11 +13,9 @@ dependencies = [
 	"toon-format>=0.9.0b1",
 ]
 
-# --- This solves your build error ---
 [tool.setuptools]
 py-modules = ["mcp_server_code_execution_mode"]
 
-# --- This creates your command ---
 [project.scripts]
 # This creates the command: mcp-server-code-execution-mode
 mcp-server-code-execution-mode = "main:main"
