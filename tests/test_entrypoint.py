@@ -109,6 +109,7 @@ class EntryPointGenerationTests(unittest.TestCase):
         namespace: dict[str, object] = {"__name__": "__main__"}
         original_modules = {name for name in sys.modules if name.startswith("mcp")}
         sandbox_exports: dict[str, object] | None = None
+        mcp_package = None
         runtime_module = None
         demo_module = None
 
@@ -117,6 +118,7 @@ class EntryPointGenerationTests(unittest.TestCase):
             sys.stdin = stdin_wrapper
             exec(entrypoint, namespace)
             sandbox_exports = namespace.get("mcp_servers")  # capture before cleanup
+            mcp_package = namespace.get("mcp")
             demo_module = sys.modules.get("mcp.servers.demo_server")
             runtime_module = sys.modules.get("mcp.runtime")
         finally:
@@ -138,10 +140,13 @@ class EntryPointGenerationTests(unittest.TestCase):
         self.assertIsNotNone(demo_module)
         self.assertTrue(hasattr(demo_module, "list_things"))
         self.assertIsNotNone(runtime_module)
+        self.assertIsNotNone(mcp_package)
         if runtime_module is not None:
             self.assertEqual(runtime_module.discovered_servers(), ("demo-server",))
             self.assertTrue(hasattr(runtime_module, "query_tool_docs"))
             self.assertTrue(hasattr(runtime_module, "search_tool_docs"))
+        if runtime_module is not None and mcp_package is not None:
+            self.assertIs(getattr(mcp_package, "runtime", None), runtime_module)
 
 
 if __name__ == "__main__":  # pragma: no cover

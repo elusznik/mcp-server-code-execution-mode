@@ -599,6 +599,7 @@ class RootlessContainerSandbox:
 
 
             _SANDBOX_GLOBALS = globals()
+            _SANDBOX_GLOBALS.setdefault("mcp", __import__("mcp"))
             LOADED_MCP_SERVERS = tuple(server["name"] for server in AVAILABLE_SERVERS)
             mcp_servers = {}
             for server in AVAILABLE_SERVERS:
@@ -616,6 +617,7 @@ class RootlessContainerSandbox:
                 namespace = {"__name__": "__sandbox__"}
                 namespace["mcp_servers"] = mcp_servers
                 namespace["LOADED_MCP_SERVERS"] = LOADED_MCP_SERVERS
+                namespace["mcp"] = __import__("mcp")
                 for server_name, proxy in mcp_servers.items():
                     namespace[f"mcp_{alias_map[server_name]}"] = proxy
                 flags = getattr(__import__("ast"), "PyCF_ALLOW_TOP_LEVEL_AWAIT", 0)
