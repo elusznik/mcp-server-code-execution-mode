@@ -33,7 +33,7 @@ from mcp.types import CallToolResult, TextContent, Tool
 logger = logging.getLogger("mcp-server-code-execution-mode")
 
 BRIDGE_NAME = "mcp-server-code-execution-mode"
-DEFAULT_IMAGE = os.environ.get("MCP_BRIDGE_IMAGE", "python:3.12-slim")
+DEFAULT_IMAGE = os.environ.get("MCP_BRIDGE_IMAGE", "python:3.14-slim")
 DEFAULT_RUNTIME = os.environ.get("MCP_BRIDGE_RUNTIME")
 DEFAULT_TIMEOUT = int(os.environ.get("MCP_BRIDGE_TIMEOUT", "30"))
 MAX_TIMEOUT = int(os.environ.get("MCP_BRIDGE_MAX_TIMEOUT", "120"))
