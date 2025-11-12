@@ -46,6 +46,7 @@ This bridge implements the **"Code Execution with MCP"** pattern—a revolutiona
 ### TOON Response Format
 - We encode every MCP bridge response using [Token-Oriented Object Notation](https://github.com/toon-format/toon) (TOON).
 - TOON collapses repetitive JSON keys and emits newline-aware arrays, trimming token counts 30-60% for uniform tables so LLM bills stay lower.
+- To keep payloads lean, empty strings, lists, sets, tuples, and dicts are omitted entirely before encoding; both the TOON block and `structuredContent` share the same trimmed structure.
 - Clients can consume structured data directly from `CallToolResult.structuredContent`; the TOON block stored in `CallToolResult.content[0].text` mirrors the same payload. If the encoder is unavailable we fall back to indented JSON automatically.
 
 ## Quick Start

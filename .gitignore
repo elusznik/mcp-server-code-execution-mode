@@ -13,3 +13,4 @@ wheels/
 archive/
 settings.json
 .python-version
+.serena/

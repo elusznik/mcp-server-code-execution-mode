@@ -36,26 +36,15 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(content.type, "text")
         body = _extract_toon_body(content.text)
         decoded = toon_decode(body)
-        self.assertEqual(
-            decoded,
-            {
-                "status": "success",
-                "summary": "Success",
-                "exitCode": 0,
-                "stdout": ["line1", "line2"],
-                "stderr": [],
-            },
-        )
-        self.assertEqual(
-            response.structuredContent,
-            {
-                "status": "success",
-                "summary": "Success",
-                "exitCode": 0,
-                "stdout": ["line1", "line2"],
-                "stderr": [],
-            },
-        )
+        expected = {
+            "status": "success",
+            "summary": "Success",
+            "exitCode": 0,
+            "stdout": ["line1", "line2"],
+        }
+        self.assertEqual(decoded, expected)
+        self.assertEqual(response.structuredContent, expected)
+        self.assertNotIn("stderr", decoded)
 
     async def test_timeout_response_includes_error_details(self) -> None:
         if toon_decode is None:
@@ -110,26 +99,50 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(content.type, "text")
         body = _extract_toon_body(content.text)
         decoded = toon_decode(body)
-        self.assertEqual(
-            decoded,
-            {
-                "status": "validation_error",
-                "summary": "Missing 'code' argument",
-                "stdout": [],
-                "stderr": [],
-                "error": "Missing 'code' argument",
-            },
+        expected = {
+            "status": "validation_error",
+            "summary": "Missing 'code' argument",
+            "error": "Missing 'code' argument",
+        }
+        self.assertEqual(decoded, expected)
+        self.assertEqual(response.structuredContent, expected)
+
+    async def test_success_response_skips_empty_streams(self) -> None:
+        if toon_decode is None:
+            self.skipTest("toon-format not installed")
+        sample_result = SandboxResult(True, 0, "", "")
+
+        async_mock = AsyncMock(return_value=sample_result)
+        with patch.object(bridge_module.bridge, "execute_code", async_mock):
+            response = await bridge_module.call_tool(
+                "run_python",
+                {"code": "print('nothing to see')"},
+            )
+
+        self.assertFalse(response.isError)
+        content = response.content[0]
+        body = _extract_toon_body(content.text)
+        decoded = toon_decode(body)
+        self.assertNotIn("stdout", decoded)
+        self.assertNotIn("stderr", decoded)
+        self.assertNotIn("stdout", response.structuredContent)
+        self.assertNotIn("stderr", response.structuredContent)
+        expected = {
+            "status": "success",
+            "summary": "Success (no output)",
+            "exitCode": 0,
+        }
+        self.assertEqual(decoded, expected)
+        self.assertEqual(response.structuredContent, expected)
+
+    def test_empty_error_field_is_omitted(self) -> None:
+        response = bridge_module._build_tool_response(  # type: ignore[attr-defined]
+            status="error",
+            summary="Example",
+            error="",
         )
-        self.assertEqual(
-            response.structuredContent,
-            {
-                "status": "validation_error",
-                "summary": "Missing 'code' argument",
-                "stdout": [],
-                "stderr": [],
-                "error": "Missing 'code' argument",
-            },
-        )
+        self.assertTrue(response.isError)
+        self.assertNotIn("error", response.structuredContent)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper

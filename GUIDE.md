@@ -259,6 +259,8 @@ The bridge logs discovered servers on startup:
 
 The bridge wraps every tool response in a [Token-Oriented Object Notation](https://github.com/toon-format/toon) code block. TOON keeps the familiar JSON fields (status, stdout, stderr, etc.) but removes repeated keys and normalises arrays, typically saving 30–60% tokens for uniform tabular data. Lower token counts mean cheaper LLM calls and tighter prompts. Integrations can also read the same data from `CallToolResult.structuredContent`; the TOON block inside `CallToolResult.content[0].text` is simply a compact rendering. If the encoder is unavailable the bridge automatically falls back to pretty-printed JSON.
 
+Before encoding we drop any empty strings or collections (stdout, stderr, error, servers, etc.) so both the structured payload and TOON block stay focused on meaningful content.
+
 ### Basic Pattern: Direct Tool Use
 
 ```python

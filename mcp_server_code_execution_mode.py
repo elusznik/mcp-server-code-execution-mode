@@ -138,15 +138,34 @@ def _build_response_payload(
     if servers:
         payload["servers"] = list(servers)
 
-    payload["stdout"] = _split_output_lines(stdout)
-    payload["stderr"] = _split_output_lines(stderr)
+    stdout_lines = _split_output_lines(stdout)
+    if stdout_lines:
+        payload["stdout"] = stdout_lines
+
+    stderr_lines = _split_output_lines(stderr)
+    if stderr_lines:
+        payload["stderr"] = stderr_lines
 
     if error:
         payload["error"] = error
     if timeout_seconds is not None:
         payload["timeoutSeconds"] = timeout_seconds
 
-    return payload
+    return {
+        key: value
+        for key, value in payload.items()
+        if not _is_empty_field(value)
+    }
+
+
+def _is_empty_field(value: object) -> bool:
+    """Return True when a structured field should be omitted."""
+
+    if value is None:
+        return True
+    if isinstance(value, (list, tuple, set, dict, str)):
+        return len(value) == 0
+    return False
 
 
 def _build_tool_response(**kwargs: object) -> CallToolResult:
