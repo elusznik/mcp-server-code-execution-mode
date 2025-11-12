@@ -1,3 +1,4 @@
+import os
 import re
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -25,11 +26,12 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         sample_result = SandboxResult(True, 0, "line1\nline2\n", "")
 
         async_mock = AsyncMock(return_value=sample_result)
-        with patch.object(bridge_module.bridge, "execute_code", async_mock):
-            response = await bridge_module.call_tool(
-                "run_python",
-                {"code": "print('ok')"},
-            )
+        with patch.dict("os.environ", {"MCP_BRIDGE_OUTPUT_MODE": "toon"}, clear=False):
+            with patch.object(bridge_module.bridge, "execute_code", async_mock):
+                response = await bridge_module.call_tool(
+                    "run_python",
+                    {"code": "print('ok')"},
+                )
 
         self.assertFalse(response.isError)
         content = response.content[0]
@@ -56,11 +58,12 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         )
 
         async_mock = AsyncMock(side_effect=timeout_exc)
-        with patch.object(bridge_module.bridge, "execute_code", async_mock):
-            response = await bridge_module.call_tool(
-                "run_python",
-                {"code": "print('slow')", "timeout": 5},
-            )
+        with patch.dict("os.environ", {"MCP_BRIDGE_OUTPUT_MODE": "toon"}, clear=False):
+            with patch.object(bridge_module.bridge, "execute_code", async_mock):
+                response = await bridge_module.call_tool(
+                    "run_python",
+                    {"code": "print('slow')", "timeout": 5},
+                )
 
         self.assertTrue(response.isError)
         content = response.content[0]
@@ -93,7 +96,8 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
     async def test_validation_error_uses_toon(self) -> None:
         if toon_decode is None:
             self.skipTest("toon-format not installed")
-        response = await bridge_module.call_tool("run_python", {})
+        with patch.dict("os.environ", {"MCP_BRIDGE_OUTPUT_MODE": "toon"}, clear=False):
+            response = await bridge_module.call_tool("run_python", {})
         self.assertTrue(response.isError)
         content = response.content[0]
         self.assertEqual(content.type, "text")
@@ -113,11 +117,12 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         sample_result = SandboxResult(True, 0, "", "")
 
         async_mock = AsyncMock(return_value=sample_result)
-        with patch.object(bridge_module.bridge, "execute_code", async_mock):
-            response = await bridge_module.call_tool(
-                "run_python",
-                {"code": "print('nothing to see')"},
-            )
+        with patch.dict("os.environ", {"MCP_BRIDGE_OUTPUT_MODE": "toon"}, clear=False):
+            with patch.object(bridge_module.bridge, "execute_code", async_mock):
+                response = await bridge_module.call_tool(
+                    "run_python",
+                    {"code": "print('nothing to see')"},
+                )
 
         self.assertFalse(response.isError)
         content = response.content[0]
@@ -143,6 +148,22 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(response.isError)
         self.assertNotIn("error", response.structuredContent)
+
+    async def test_default_output_mode_renders_plain_text(self) -> None:
+        sample_result = SandboxResult(True, 0, "alpha\nbeta\n", "")
+
+        async_mock = AsyncMock(return_value=sample_result)
+        with patch.object(bridge_module.bridge, "execute_code", async_mock):
+            response = await bridge_module.call_tool(
+                "run_python",
+                {"code": "print('alpha');print('beta')"},
+            )
+
+        self.assertFalse(response.isError)
+        self.assertEqual(response.content[0].type, "text")
+        self.assertEqual(response.content[0].text.strip(), "alpha\nbeta")
+        self.assertNotIn("```", response.content[0].text)
+        self.assertEqual(response.structuredContent, {"stdout": ["alpha", "beta"]})
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper

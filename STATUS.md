@@ -15,8 +15,9 @@ The MCP Server Code Execution Mode bridge is a **functional implementation** of 
 - JSON-framed stdio transport between sandbox and host for tool calls
 - Persistent MCP client sessions (avoids cold starts)
 - Timeout enforcement with proper error handling
-- Tool responses now surface a `CallToolResult` with mirrored `structuredContent`
-  plus a TOON-formatted `TextContent` block for LLM prompts.
+- Tool responses surface a `CallToolResult` with mirrored `structuredContent`
+  and compact plain-text `TextContent`; set `MCP_BRIDGE_OUTPUT_MODE=toon` to
+  emit TOON blocks when desired.
 
 **Security Model:**
 - Network disabled (`--network none`)

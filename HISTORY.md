@@ -40,6 +40,9 @@ The pivot to rootless containers provided:
     `CallToolResult` objects (TOON text + mirrored `structuredContent`). The
     fix ships in the public package, so the `uvx` shim now reflects the latest
     behaviour.
+- **2025-11 update**: Switched the default response renderer to compact
+    plain text while keeping TOON blocks opt-in via `MCP_BRIDGE_OUTPUT_MODE`
+    for scenarios that benefit from the structured format.
 
 ## Key Lessons
 

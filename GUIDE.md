@@ -171,6 +171,17 @@ export MCP_BRIDGE_CONTAINER_USER=1000:1000
 export MCP_BRIDGE_RUNTIME_IDLE_TIMEOUT=300
 ```
 
+#### Output Formatting
+
+```bash
+# Default responses are compact plain text.
+# Set to 'toon' when you want rich TOON blocks instead.
+export MCP_BRIDGE_OUTPUT_MODE=toon
+
+# Reduce bridge log noise (defaults to INFO)
+export MCP_BRIDGE_LOG_LEVEL=WARNING
+```
+
 ### Configuration File
 
 **Note:** The bridge currently does not support loading variables from a `.env` file. All configuration must be done via environment variables or container runtime settings.
@@ -255,11 +266,11 @@ The bridge logs discovered servers on startup:
 
 ## Usage Patterns
 
-### Response Format (TOON)
+### Response Formats
 
-The bridge wraps every tool response in a [Token-Oriented Object Notation](https://github.com/toon-format/toon) code block. TOON keeps the familiar JSON fields (status, stdout, stderr, etc.) but removes repeated keys and normalises arrays, typically saving 30–60% tokens for uniform tabular data. Lower token counts mean cheaper LLM calls and tighter prompts. Integrations can also read the same data from `CallToolResult.structuredContent`; the TOON block inside `CallToolResult.content[0].text` is simply a compact rendering. If the encoder is unavailable the bridge automatically falls back to pretty-printed JSON.
-
-Before encoding we drop any empty strings or collections (stdout, stderr, error, servers, etc.) so both the structured payload and TOON block stay focused on meaningful content.
+- **Compact (default)** – Responses surface as plain text, preserving `stdout`/`stderr` exactly as emitted while trimming empty fields from `structuredContent`. This keeps prompts lean without losing important context. Stdio mirroring is unchanged: everything your code prints still reaches the client.
+- **TOON mode** – Set `MCP_BRIDGE_OUTPUT_MODE=toon` when you prefer [Token-Oriented Object Notation](https://github.com/toon-format/toon) blocks. We still drop empty strings/collections before encoding, and the TOON block mirrors the same `structuredContent` payload.
+- **JSON fallback** – If the TOON encoder is missing the bridge automatically falls back to indented JSON blocks, so integrations always receive readable text alongside the structured data.
 
 ### Basic Pattern: Direct Tool Use
 

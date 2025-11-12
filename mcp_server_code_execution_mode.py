@@ -44,9 +44,10 @@ CONTAINER_USER = os.environ.get("MCP_BRIDGE_CONTAINER_USER", "65534:65534")
 DEFAULT_RUNTIME_IDLE_TIMEOUT = int(os.environ.get("MCP_BRIDGE_RUNTIME_IDLE_TIMEOUT", "300"))
 
 SANDBOX_HELPERS_SUMMARY = (
-    "Sandbox helpers: mcp.runtime.list_servers(), list_tools(server), describe_server(name), "
-    "query_tool_docs(server, tool=None, detail='summary'), search_tool_docs(query, limit=5, detail='summary'), "
-    "discovered_servers(), list_loaded_server_metadata(). Loaded servers also appear as mcp_<alias> proxies."
+    "Sandbox helpers: await mcp.runtime.list_servers() (returns the servers loaded via the 'servers' argument), "
+    "discovered_servers() for all discovered identifiers, await mcp.runtime.list_tools(server), "
+    "await mcp.runtime.query_tool_docs(server, tool=None, detail='summary'), await mcp.runtime.search_tool_docs(query, limit=5, detail='summary'), "
+    "plus describe_server(name), list_loaded_server_metadata(). Loaded servers also appear as mcp_<alias> proxies."
 )
 
 CONFIG_DIRS = [
@@ -122,6 +123,84 @@ def _render_toon_block(payload: Dict[str, object]) -> str:
     return f"```json\n{fallback}\n```"
 
 
+def _output_mode() -> str:
+    """Return the configured output mode."""
+
+    return os.environ.get("MCP_BRIDGE_OUTPUT_MODE", "compact").strip().lower()
+
+
+def _render_compact_output(payload: Dict[str, object]) -> str:
+    """Render a terse, token-efficient textual summary."""
+
+    lines: List[str] = []
+    stdout_lines = payload.get("stdout") or []
+    stderr_lines = payload.get("stderr") or []
+    if stdout_lines:
+        lines.append("\n".join(str(item) for item in stdout_lines))
+    if stderr_lines:
+        stderr_text = "\n".join(str(item) for item in stderr_lines)
+        lines.append(f"stderr:\n{stderr_text}")
+
+    status = str(payload.get("status", ""))
+    exit_code = payload.get("exitCode")
+    error = payload.get("error")
+
+    if not lines and payload.get("summary"):
+        lines.append(str(payload["summary"]))
+
+    if error and (not lines or status != "error"):
+        lines.append(f"error: {error}")
+
+    if exit_code not in (None, 0):
+        lines.insert(0, f"exit: {exit_code}")
+
+    if status and status.lower() not in {"", "success"}:
+        lines.insert(0, f"status: {status}")
+
+    text = "\n".join(line for line in lines if line).strip()
+    if text:
+        return text
+
+    if status:
+        return status
+    return str(payload.get("summary", "")).strip() or "success"
+
+
+def _build_compact_structured_payload(payload: Dict[str, object]) -> Dict[str, object]:
+    """Return a trimmed structured representation for compact responses."""
+
+    compact: Dict[str, object] = {}
+    status = str(payload.get("status", ""))
+    exit_code = payload.get("exitCode")
+
+    if status and status.lower() != "success":
+        compact["status"] = status
+
+    if exit_code not in (None, 0):
+        compact["exitCode"] = exit_code
+
+    if payload.get("stdout"):
+        compact["stdout"] = payload["stdout"]
+
+    if payload.get("stderr"):
+        compact["stderr"] = payload["stderr"]
+
+    if payload.get("servers"):
+        compact["servers"] = payload["servers"]
+
+    if payload.get("timeoutSeconds"):
+        compact["timeoutSeconds"] = payload["timeoutSeconds"]
+
+    if payload.get("error"):
+        compact["error"] = payload["error"]
+
+    summary = payload.get("summary")
+    if summary and (status.lower() != "success" or not compact.get("stdout")):
+        compact["summary"] = summary
+
+    return compact or {key: payload[key] for key in ("status", "summary") if key in payload}
+
+
 def _build_response_payload(
     *,
     status: str,
@@ -133,7 +212,7 @@ def _build_response_payload(
     error: Optional[str] = None,
     timeout_seconds: Optional[int] = None,
 ) -> Dict[str, object]:
-    """Create a structured payload for TOON encoding."""
+    """Create a structured payload shared by compact/TOON responses."""
 
     payload: Dict[str, object] = {
         "status": status,
@@ -176,12 +255,23 @@ def _is_empty_field(value: object) -> bool:
 
 
 def _build_tool_response(**kwargs: object) -> CallToolResult:
-    """Render a TOON (or JSON fallback) message for tool responses."""
+    """Render a tool response in compact text (default) or TOON format."""
 
     payload = _build_response_payload(**kwargs)
-    message = _render_toon_block(payload)
     status = str(payload.get("status", "error")).lower()
     is_error = status not in {"success"}
+    mode = _output_mode()
+
+    if mode == "compact":
+        message = _render_compact_output(payload)
+        structured = _build_compact_structured_payload(payload)
+        return CallToolResult(
+            content=[TextContent(type="text", text=message)],
+            structuredContent=structured,
+            isError=is_error,
+        )
+
+    message = _render_toon_block(payload)
     return CallToolResult(
         content=[TextContent(type="text", text=message)],
         structuredContent=payload,

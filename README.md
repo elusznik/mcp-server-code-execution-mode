@@ -41,13 +41,12 @@ This bridge implements the **"Code Execution with MCP"** pattern—a revolutiona
   ```
 - **Top-level await** - Modern Python patterns
 - **Type-safe** - Proper signatures and docs
-- **TOON responses** - Tool outputs are emitted as TOON code blocks for token-efficient prompting
+- **Compact responses** - Plain-text output by default with optional TOON blocks when requested
 
-### TOON Response Format
-- We encode every MCP bridge response using [Token-Oriented Object Notation](https://github.com/toon-format/toon) (TOON).
-- TOON collapses repetitive JSON keys and emits newline-aware arrays, trimming token counts 30-60% for uniform tables so LLM bills stay lower.
-- To keep payloads lean, empty strings, lists, sets, tuples, and dicts are omitted entirely before encoding; both the TOON block and `structuredContent` share the same trimmed structure.
-- Clients can consume structured data directly from `CallToolResult.structuredContent`; the TOON block stored in `CallToolResult.content[0].text` mirrors the same payload. If the encoder is unavailable we fall back to indented JSON automatically.
+### Response Formats
+- **Default (compact)** – responses render as plain text plus a minimal `structuredContent` payload containing only non-empty fields. `stdout`/`stderr` lines stay intact, so prompts remain lean without sacrificing content.
+- **Optional TOON** – set `MCP_BRIDGE_OUTPUT_MODE=toon` to emit [Token-Oriented Object Notation](https://github.com/toon-format/toon) blocks. We still drop empty fields and mirror the same structure in `structuredContent`; TOON is handy when you want deterministic tokenisation for downstream prompts.
+- **Fallback JSON** – if the TOON encoder is unavailable we automatically fall back to pretty JSON blocks while preserving the trimmed payload.
 
 ## Quick Start
 
@@ -168,6 +167,8 @@ await mcp_github.create_issue(repo='owner/repo', title=data.title)
 | `MCP_BRIDGE_CONTAINER_USER` | 65534:65534 | Run as UID:GID |
 | `MCP_BRIDGE_RUNTIME_IDLE_TIMEOUT` | 300s | Shutdown delay |
 | `MCP_BRIDGE_STATE_DIR` | `./.mcp-bridge` | Host directory for IPC sockets and temp state |
+| `MCP_BRIDGE_OUTPUT_MODE` | `compact` | Response text format (`compact` or `toon`) |
+| `MCP_BRIDGE_LOG_LEVEL` | `INFO` | Bridge logging verbosity |
 
 ### Server Discovery
 
