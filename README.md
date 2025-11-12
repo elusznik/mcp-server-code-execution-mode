@@ -219,6 +219,33 @@ data = await mcp_search.search(query="TODO")
 await mcp_github.create_issue(repo='owner/repo', title=data.title)
 ```
 
+## Testing
+
+Project environments target CPython 3.14. If your local checkout still pins 3.12 (via `.python-version`), update it before running tests:
+
+```bash
+uv python pin 3.14
+uv sync
+```
+
+Runtime dependencies stay lean, so `pytest` is fetched on demand when needed:
+
+```bash
+uv run --with pytest pytest
+```
+
+Prefer a persistent install? Add a dev extra and sync it once:
+
+```toml
+[project.optional-dependencies]
+test = ["pytest>=9"]
+```
+
+```bash
+uv sync --group test
+uv run pytest
+```
+
 ## Architecture
 
 ```
