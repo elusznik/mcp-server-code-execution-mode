@@ -165,7 +165,8 @@ class ToonResponseTests(unittest.IsolatedAsyncioTestCase):
             error="",
         )
         self.assertTrue(response.isError)
-        self.assertNotIn("error", response.structuredContent)
+        structured = response.structuredContent or {}
+        self.assertNotIn("error", structured)
 
     async def test_default_output_mode_renders_plain_text(self) -> None:
         sample_result = SandboxResult(True, 0, "alpha\nbeta\n", "")

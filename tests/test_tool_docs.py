@@ -1,7 +1,7 @@
 import unittest
+from typing import Any, Dict, List, cast
 
-from mcp_server_code_execution_mode import MCPBridge, MCPServerInfo
-from mcp_server_code_execution_mode import SandboxInvocation
+from mcp_server_code_execution_mode import MCPBridge, MCPServerInfo, SandboxInvocation
 
 
 class _DummySandbox:
@@ -83,7 +83,8 @@ class ToolDocsTests(unittest.IsolatedAsyncioTestCase):
                 }
             )
             self.assertTrue(query_response["success"])
-            self.assertEqual(len(query_response["docs"]), 1)
+            docs = cast(List[Dict[str, Any]], query_response.get("docs", []))
+            self.assertEqual(len(docs), 1)
             search_response = await invocation.handle_rpc(
                 {
                     "type": "search_tool_docs",
@@ -93,7 +94,8 @@ class ToolDocsTests(unittest.IsolatedAsyncioTestCase):
                 }
             )
             self.assertTrue(search_response["success"])
-            self.assertGreaterEqual(len(search_response["results"]), 1)
+            results = cast(List[Dict[str, Any]], search_response.get("results", []))
+            self.assertGreaterEqual(len(results), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover

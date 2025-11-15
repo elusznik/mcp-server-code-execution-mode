@@ -8,7 +8,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, Optional, Sequence
+from typing import Awaitable, Callable, Dict, Optional, Sequence, cast
 
 import mcp_server_code_execution_mode as bridge_module
 from mcp_server_code_execution_mode import SandboxError, SandboxResult, SandboxTimeout
@@ -37,7 +37,11 @@ class InProcessSandbox:
         class _MCPProxy:
             def __init__(self, server_info: Dict[str, object]):
                 self._server_name = str(server_info.get("name"))
-                tools = server_info.get("tools", [])
+                raw_tools = server_info.get("tools", [])
+                if isinstance(raw_tools, (list, tuple)):
+                    tools = list(raw_tools)
+                else:
+                    tools = []
                 self._tools = {str(tool["alias"]): tool for tool in tools}
 
             async def list_tools(self):
@@ -143,7 +147,8 @@ class StubIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 if getattr(client, "_session", None) is None:
                     continue
                 try:
-                    await client.stop()
+                    client_obj = cast(bridge_module.ClientLike, client)
+                    await client_obj.stop()
                 except Exception:  # pragma: no cover - diagnostic aid
                     traceback.print_exc()
         finally:
@@ -182,7 +187,8 @@ class StubIntegrationTests(unittest.IsolatedAsyncioTestCase):
 
         client = self.bridge.clients.get("stub")
         if client:
-            await client.stop()
+            client_obj = cast(bridge_module.ClientLike, client)
+            await client_obj.stop()
 
 
 if __name__ == "__main__":

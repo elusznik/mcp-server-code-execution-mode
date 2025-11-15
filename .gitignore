@@ -14,3 +14,4 @@ archive/
 settings.json
 .python-version
 .serena/
+.DS_Store

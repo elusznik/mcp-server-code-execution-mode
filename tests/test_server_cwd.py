@@ -1,6 +1,6 @@
 import unittest
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, cast
 from unittest import mock
 
 import anyio
@@ -61,7 +61,8 @@ class ServerCwdTests(unittest.IsolatedAsyncioTestCase):
 
         # Cleanup
         if server_name in bridge.clients:
-            await bridge.clients[server_name].stop()
+            client_obj = cast(bridge_module.ClientLike, bridge.clients[server_name])
+            await client_obj.stop()
             del bridge.clients[server_name]
         if server_name in bridge.servers:
             del bridge.servers[server_name]
@@ -109,7 +110,8 @@ class ServerCwdTests(unittest.IsolatedAsyncioTestCase):
 
         # Cleanup
         if server_name in bridge.clients:
-            await bridge.clients[server_name].stop()
+            client_obj = cast(bridge_module.ClientLike, bridge.clients[server_name])
+            await client_obj.stop()
             del bridge.clients[server_name]
         if server_name in bridge.servers:
             del bridge.servers[server_name]

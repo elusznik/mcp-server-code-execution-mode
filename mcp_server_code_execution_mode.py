@@ -14,13 +14,15 @@ import shutil
 import sys
 import tempfile
 import textwrap
+from asyncio import subprocess as aio_subprocess
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, Optional, Sequence
+from typing import Awaitable, Callable, Dict, List, Optional, Protocol, Sequence, cast
 
 try:  # Prefer the official encoder when available
-    from toon_format import encode as _toon_encode
+    import toon_format as _toon_format
+    _toon_encode = _toon_format.encode
 except ImportError:  # pragma: no cover - fallback for environments without toon
     _toon_encode = None
 
@@ -132,6 +134,25 @@ class SandboxError(RuntimeError):
         self.stderr = stderr
 
 
+class ClientLike(Protocol):
+    async def list_tools(self) -> List[Dict[str, object]]:  # pragma: no cover - typing only
+        ...
+
+    async def call_tool(self, name: str, arguments: Dict[str, object]) -> Dict[str, object]:  # pragma: no cover - typing only
+        ...
+
+    async def stop(self) -> None:  # pragma: no cover - typing only
+        ...
+
+
+class SandboxLike(Protocol):
+    async def execute(self, code: str, **kwargs) -> SandboxResult:  # pragma: no cover - typing only
+        ...
+
+    async def ensure_shared_directory(self, path: Path) -> None:  # pragma: no cover - typing only
+        ...
+
+
 class SandboxTimeout(SandboxError):
     """Raised when user code exceeds the configured timeout."""
 
@@ -204,8 +225,16 @@ def _render_compact_output(payload: Dict[str, object]) -> str:
     """Render a terse, token-efficient textual summary."""
 
     lines: List[str] = []
-    stdout_lines = payload.get("stdout") or []
-    stderr_lines = payload.get("stderr") or []
+    stdout_raw = payload.get("stdout", ())
+    if isinstance(stdout_raw, (list, tuple)):
+        stdout_lines = list(stdout_raw)
+    else:
+        stdout_lines = []
+    stderr_raw = payload.get("stderr", ())
+    if isinstance(stderr_raw, (list, tuple)):
+        stderr_lines = list(stderr_raw)
+    else:
+        stderr_lines = []
     if stdout_lines:
         lines.append("\n".join(str(item) for item in stdout_lines))
     if stderr_lines:
@@ -334,10 +363,29 @@ def _is_empty_field(value: object) -> bool:
     return False
 
 
-def _build_tool_response(**kwargs: object) -> CallToolResult:
+def _build_tool_response(
+    *,
+    status: str,
+    summary: str,
+    exit_code: Optional[int] = None,
+    stdout: Optional[str] = None,
+    stderr: Optional[str] = None,
+    servers: Optional[Sequence[str]] = None,
+    error: Optional[str] = None,
+    timeout_seconds: Optional[int] = None,
+) -> CallToolResult:
     """Render a tool response in compact text (default) or TOON format."""
 
-    payload = _build_response_payload(**kwargs)
+    payload = _build_response_payload(
+        status=status,
+        summary=summary,
+        exit_code=exit_code,
+        stdout=stdout,
+        stderr=stderr,
+        servers=servers,
+        error=error,
+        timeout_seconds=timeout_seconds,
+    )
     status = str(payload.get("status", "error")).lower()
     is_error = status not in {"success"}
     mode = _output_mode()
@@ -930,12 +978,13 @@ class RootlessContainerSandbox:
         process = await asyncio.create_subprocess_exec(
             self.runtime,
             *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdout=aio_subprocess.PIPE,
+            stderr=aio_subprocess.PIPE,
         )
         stdout_bytes, stderr_bytes = await process.communicate()
         stdout_text = stdout_bytes.decode(errors="replace")
         stderr_text = stderr_bytes.decode(errors="replace")
+        assert process.returncode is not None
         return process.returncode, stdout_text, stderr_text
 
     async def _stop_runtime(self) -> None:
@@ -1071,9 +1120,9 @@ class RootlessContainerSandbox:
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdin=aio_subprocess.PIPE,
+            stdout=aio_subprocess.PIPE,
+            stderr=aio_subprocess.PIPE,
         )
 
         async def _handle_stdout() -> None:
@@ -1138,7 +1187,7 @@ class RootlessContainerSandbox:
 
         try:
             await asyncio.wait_for(process.wait(), timeout=timeout)
-        except asyncio.TimeoutExpired as exc:
+        except asyncio.TimeoutError as exc:
             process.kill()
             await process.wait()
             stdout_task.cancel()
@@ -1168,7 +1217,9 @@ class RootlessContainerSandbox:
             stderr_text = self._filter_runtime_stderr(stderr_text)
 
         try:
-            return SandboxResult(process.returncode == 0, process.returncode, stdout_text, stderr_text)
+            exit_code = process.returncode
+            assert exit_code is not None
+            return SandboxResult(exit_code == 0, exit_code, stdout_text, stderr_text)
         finally:
             await self._schedule_runtime_shutdown()
 
@@ -1202,8 +1253,8 @@ class RootlessContainerSandbox:
                 "--rootful",
                 "--volume",
                 share_spec,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stdout=aio_subprocess.PIPE,
+                stderr=aio_subprocess.PIPE,
             )
         except FileNotFoundError:
             logger.debug("Podman binary not found while ensuring volume share for %s", path)
@@ -1285,7 +1336,9 @@ class SandboxInvocation:
         for server_name in self.active_servers:
             metadata = await self.bridge.get_cached_server_metadata(server_name)
             self.server_metadata.append(metadata)
-        self.allowed_servers = {meta["name"] for meta in self.server_metadata}
+        self.allowed_servers = {
+            str(meta.get("name")) for meta in self.server_metadata if isinstance(meta.get("name"), str)
+        }
         self.discovered_servers = sorted(self.bridge.servers.keys())
         state_dir_env = os.environ.get("MCP_BRIDGE_STATE_DIR")
         if state_dir_env:
@@ -1395,7 +1448,8 @@ class SandboxInvocation:
 
         try:
             if req_type == "list_tools":
-                tools = await client.list_tools()
+                client_obj = cast(ClientLike, client)
+                tools = await client_obj.list_tools()
                 return {"success": True, "tools": tools}
 
             tool_name = request.get("tool")
@@ -1405,7 +1459,9 @@ class SandboxInvocation:
             if not isinstance(arguments, dict):
                 return {"success": False, "error": "Arguments must be an object"}
 
-            result = await client.call_tool(tool_name, arguments)
+            arguments = cast(Dict[str, object], arguments)
+            client_obj = cast(ClientLike, client)
+            result = await client_obj.call_tool(tool_name, arguments)
             return {"success": True, "result": result}
         except Exception as exc:  # pragma: no cover
             logger.debug("MCP proxy call failed", exc_info=True)
@@ -1415,10 +1471,10 @@ class SandboxInvocation:
 class MCPBridge:
     """Expose the secure sandbox as an MCP tool with MCP proxying."""
 
-    def __init__(self, sandbox: Optional[RootlessContainerSandbox] = None) -> None:
+    def __init__(self, sandbox: Optional[object] = None) -> None:
         self.sandbox = sandbox or RootlessContainerSandbox()
         self.servers: Dict[str, MCPServerInfo] = {}
-        self.clients: Dict[str, PersistentMCPClient] = {}
+        self.clients: Dict[str, object] = {}
         self.loaded_servers: set[str] = set()
         self._aliases: Dict[str, str] = {}
         self._discovered = False
@@ -1531,7 +1587,8 @@ class MCPBridge:
         if not client:
             raise SandboxError(f"Server {server_name} is not loaded")
 
-        tool_specs = await client.list_tools()
+        client_obj = cast(ClientLike, client)
+        tool_specs = await client_obj.list_tools()
         alias = self._alias_for(server_name)
         alias_counts: Dict[str, int] = {}
         tools: List[Dict[str, object]] = []
@@ -1646,14 +1703,21 @@ class MCPBridge:
         if tool is not None:
             if not isinstance(tool, str):
                 raise SandboxError("'tool' must be a string when provided")
-            identifier_map = cache_entry.get("identifier_index", {})
-            match = identifier_map.get(tool.lower()) if isinstance(identifier_map, dict) else None
+            identifier_map_raw = cache_entry.get("identifier_index", {})
+            identifier_map: Dict[str, Dict[str, object]] = {}
+            if isinstance(identifier_map_raw, dict):
+                identifier_map = cast(Dict[str, Dict[str, object]], identifier_map_raw)
+            match = identifier_map.get(tool.lower())
             if not match:
                 raise SandboxError(f"Tool {tool!r} not found for server {server_name}")
-            docs.append(self._format_tool_doc(server_name, server_alias, match, detail_value))
+            docs.append(self._format_tool_doc(server_name, server_alias, cast(Dict[str, object], match), detail_value))
             return docs
 
-        for info in cache_entry.get("tools", []):
+        tools_raw = cache_entry.get("tools", [])
+        if not isinstance(tools_raw, (list, tuple)):
+            tools_raw = []
+        for info_raw in tools_raw:
+            info = cast(Dict[str, object], info_raw)
             docs.append(self._format_tool_doc(server_name, server_alias, info, detail_value))
         return docs
 
@@ -1664,13 +1728,17 @@ class MCPBridge:
         entries: List[Dict[str, object]] = []
         for server_name, cache_entry in self._server_docs_cache.items():
             server_alias = str(cache_entry.get("alias", ""))
-            for info in cache_entry.get("tools", []):
+            tools_raw = cache_entry.get("tools", [])
+            if not isinstance(tools_raw, (list, tuple)):
+                continue
+            for info_raw in tools_raw:
+                info = cast(Dict[str, object], info_raw)
                 entries.append(
                     {
                         "server": server_name,
                         "server_alias": server_alias,
                         "info": info,
-                        "keywords": info.get("keywords", ""),
+                        "keywords": str(info.get("keywords", "")),
                     }
                 )
 
@@ -1703,13 +1771,15 @@ class MCPBridge:
         for entry in self._search_index:
             if entry.get("server") not in allowed:
                 continue
-            keywords = entry.get("keywords", "")
+            keywords = str(entry.get("keywords", ""))
             if all(token in keywords for token in tokens):
+                info_raw = entry.get("info", {})
+                info = cast(Dict[str, object], info_raw)
                 matches.append(
                     self._format_tool_doc(
                         str(entry.get("server")),
                         str(entry.get("server_alias", "")),
-                        entry.get("info", {}),
+                        info,
                         detail_value,
                     )
                 )
@@ -1731,7 +1801,8 @@ class MCPBridge:
             await self.load_server(server_name)
 
         async with SandboxInvocation(self, requested_servers) as invocation:
-            result = await self.sandbox.execute(
+            sandbox_obj = cast(SandboxLike, self.sandbox)
+            result = await sandbox_obj.execute(
                 code,
                 timeout=request_timeout,
                 servers_metadata=invocation.server_metadata,
