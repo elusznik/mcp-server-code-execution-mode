@@ -6,6 +6,7 @@
 
 [![Anthropic Engineering](https://img.shields.io/badge/Anthropic-Engineering-orange)](https://www.anthropic.com/engineering/code-execution-with-mcp)
 [![Cloudflare Blog](https://img.shields.io/badge/Cloudflare-Code_Mode-orange)](https://blog.cloudflare.com/code-mode/)
+[![Docker MCP Gateway](https://img.shields.io/badge/Docker-MCP_Gateway-blue)](https://www.docker.com/blog/dynamic-mcps-stop-hardcoding-your-agents-world/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Documentation-green)](https://modelcontextprotocol.io/)
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/4a84c349-1795-41fc-a299-83d4a29feee8)
 
