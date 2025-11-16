@@ -154,6 +154,9 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 
 ### 1. Prerequisites (macOS or Linux)
 
+- **Python 3.14**: This project is designed to run on Python 3.14 specifically
+  - Check version: `python3 --version`
+  - If needed, install Python 3.14 via package manager or [python.org](https://python.org)
 - Install a rootless container runtime (Podman or Docker).
   - macOS: `brew install podman` or `brew install --cask docker`
   - Ubuntu/Debian: `sudo apt-get install -y podman` or `curl -fsSL https://get.docker.com | sh`
@@ -163,9 +166,9 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
   ```
 - Pull a Python base image once your runtime is ready:
   ```bash
-  podman pull python:3.12-slim
+  podman pull python:3.14-slim
   # or
-  docker pull python:3.12-slim
+  docker pull python:3.14-slim
   ```
 
 ### 2. Install Dependencies
@@ -244,7 +247,7 @@ Note: server configurations can include an optional `cwd` property. If present t
 
 ## Testing
 
-Project environments target CPython 3.14. If your local checkout still pins 3.12 (via `.python-version`), update it before running tests:
+Project environments target CPython 3.14. Ensure your local environment uses Python 3.14+:
 
 ```bash
 uv python pin 3.14
@@ -314,7 +317,7 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MCP_BRIDGE_RUNTIME` | auto | Container runtime (podman/docker) |
-| `MCP_BRIDGE_IMAGE` | python:3.12-slim | Container image |
+| `MCP_BRIDGE_IMAGE` | python:3.14-slim | Container image |
 | `MCP_BRIDGE_TIMEOUT` | 30s | Default timeout |
 | `MCP_BRIDGE_MAX_TIMEOUT` | 120s | Max timeout |
 | `MCP_BRIDGE_MEMORY` | 512m | Memory limit |

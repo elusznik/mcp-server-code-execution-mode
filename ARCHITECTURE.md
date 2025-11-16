@@ -3,9 +3,9 @@
 ## Overview
 
 The bridge runs user-supplied Python inside a **rootless container** and proxies
-host-managed MCP servers into that sandbox when requested. Legacy in-process and
-RLIMIT-based prototypes remain in `archive/` for reference but are no longer
-used by the application.
+host-managed MCP servers into that sandbox when requested. Historical prototypes
+with significant security flaws were abandoned rather than archived, serving as
+lessons for what not to do in secure code execution.
 
 ## High-Level Flow
 
@@ -34,7 +34,7 @@ used by the application.
                │
                ▼
 ┌───────────────────────────┐
-│ python:3.12-slim image    │
+│ python:3.14-slim image    │
 │ - Runs async entrypoint   │
 │ - Executes provided code  │
 │ - Calls mcp_<alias> tools │
@@ -70,8 +70,8 @@ stdio mediate MCP tool access through the host.
 - **Podman machine management**: When using Podman, the bridge automatically
   starts the Podman machine if not running and shuts it down after
   `MCP_BRIDGE_RUNTIME_IDLE_TIMEOUT` seconds of inactivity (default 300s/5min).
-- **Legacy prototypes (`archive/`)**: Historical in-process experiments are
-  retained for reference; see `HISTORY.md` for context on their retirement.
+- **Historical context**: The project evolved through failed security experiments
+  to the current robust architecture; see `HISTORY.md` for the evolution story.
 
 ## Request Lifecycle
 
@@ -113,7 +113,7 @@ changes:
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `MCP_BRIDGE_RUNTIME` | Force container runtime (`podman` or `docker`) | auto-detect |
-| `MCP_BRIDGE_IMAGE` | Container image to run | `python:3.12-slim` |
+| `MCP_BRIDGE_IMAGE` | Container image to run | `python:3.14-slim` |
 | `MCP_BRIDGE_TIMEOUT` | Default timeout (seconds) | 30 |
 | `MCP_BRIDGE_MAX_TIMEOUT` | Hard timeout ceiling | 120 |
 | `MCP_BRIDGE_MEMORY` | Memory limit passed to `--memory` | 512m |

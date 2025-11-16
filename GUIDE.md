@@ -49,13 +49,13 @@ newgrp docker
 
 ```bash
 # Pull image
-podman pull python:3.12-slim
+podman pull python:3.14-slim
 
 # Or with Docker
-docker pull python:3.12-slim
+docker pull python:3.14-slim
 
 # Verify
-podman images python:3.12-slim
+podman images python:3.14-slim
 ```
 
 ### Setup
@@ -523,16 +523,16 @@ Error: No container runtime found
 
 **Problem:**
 ```
-Error: Failed to pull image python:3.12-slim
+Error: Failed to pull image python:3.14-slim
 ```
 
 **Solution:**
 ```bash
 # Manually pull
-podman pull python:3.12-slim
+podman pull python:3.14-slim
 
 # Or use different image
-export MCP_BRIDGE_IMAGE=python:3.11-slim
+export MCP_BRIDGE_IMAGE=python:3.14-slim
 ```
 
 ### Gateway Servers Fail to Initialize
@@ -644,7 +644,7 @@ export MCP_BRIDGE_PIDS=256
 
 **Solutions:**
 1. Keep podman machine running (avoid shutdown)
-2. Use local image: `podman pull python:3.12-slim`
+2. Use local image: `podman pull python:3.14-slim`
 3. Consider caching strategies
 4. Reuse containers (not currently supported)
 

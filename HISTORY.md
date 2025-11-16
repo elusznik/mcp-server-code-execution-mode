@@ -10,13 +10,12 @@ The MCP Server Code Execution Mode bridge evolved through **failed prototypes** 
 
 Early iterations attempted to sandbox code using host-side techniques:
 
-**Archived Files** (see `archive/broken_prototypes/`):
-- `mini_codex.py` - No sandbox, event loop issues
-- `claude_prototype.py` - Process spawning, no isolation
-- `mcp_codex.py` - Broken startup, undeclared functions
-- `secure_codex.py` - "Safe builtins", still vulnerable
-- `proper_codex.py` - RLIMIT misapplication
-- `claude_prototype.py` - Additional failed attempt
+**Archived Files**: Early prototypes with significant security flaws were abandoned rather than archived. The failed approaches included:
+- In-process sandbox attempts with unsafe builtins
+- RLIMIT-based isolation that was easily circumvented
+- Process spawning without proper isolation
+- Broken startup sequences and event loop violations
+- Various insecure execution patterns
 
 **Common Failures:**
 1. **Security flaws** - Sandbox escapes through "safe" builtins
@@ -161,7 +160,7 @@ result = run_python(code, servers=['filesystem'])
 
 Thanks to reviewers and contributors who highlighted the failures in the prototypes. Their feedback was essential for the current robust implementation.
 
-The archived prototypes remain as a reference for what **not** to do and why security claims must be carefully validated.
+These failed approaches serve as valuable lessons demonstrating why security claims must be carefully validated and why architectural commitment to security is essential.
 
 ## Conclusion
 
