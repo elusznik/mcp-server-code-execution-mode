@@ -91,7 +91,9 @@ def _check_pydantic_compatibility() -> None:
 
 _check_pydantic_compatibility()
 
-from mcp.client.session import ClientSession  # noqa: E402  (import intentionally delayed for compatibility checks)
+from mcp.client.session import (
+    ClientSession,  # noqa: E402  (import intentionally delayed for compatibility checks)
+)
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
