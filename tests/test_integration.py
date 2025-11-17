@@ -8,7 +8,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, Optional, Sequence, cast, ClassVar, List
+from typing import Awaitable, Callable, ClassVar, Dict, List, Optional, Sequence, cast
 
 import mcp_server_code_execution_mode as bridge_module
 from mcp_server_code_execution_mode import SandboxError, SandboxResult, SandboxTimeout

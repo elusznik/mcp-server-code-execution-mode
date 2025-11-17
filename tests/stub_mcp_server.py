@@ -1,11 +1,11 @@
 import asyncio
 import sys
 from io import TextIOWrapper
+from typing import Any, cast
 
 import anyio
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from typing import Any, cast
 from mcp.types import CallToolResult, TextContent, Tool
 
 app = Server("stub-mcp")

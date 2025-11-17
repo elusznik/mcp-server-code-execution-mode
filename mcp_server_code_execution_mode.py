@@ -18,7 +18,17 @@ from asyncio import subprocess as aio_subprocess
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, Optional, Protocol, Sequence, cast, Any
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    cast,
+)
 
 _toon_encode: Optional[Callable[..., str]] = None
 try:  # Prefer the official encoder when available
