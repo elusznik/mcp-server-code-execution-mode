@@ -95,7 +95,7 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 
    matches = await runtime.search_tool_docs("calendar events", limit=5)
    for hit in matches:
-      print(hit["server"], hit["tool"], hit.get("description", ""))
+       print(hit["server"], hit["tool"], hit.get("description", ""))
    ```
 
 3. **Zero-copy proxying** – every tool call stays within the sandbox, mirrored over stdio with strict timeouts.
