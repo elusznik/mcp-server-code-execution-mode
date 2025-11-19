@@ -1,6 +1,6 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/elusznik-mcp-server-code-execution-mode-badge.png)](https://mseep.ai/app/elusznik-mcp-server-code-execution-mode)
-
 # MCP Code Execution Server: Zero-Context Discovery for 100+ MCP Tools
+
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/elusznik-mcp-server-code-execution-mode-badge.png)](https://mseep.ai/app/elusznik-mcp-server-code-execution-mode)
 
 **Stop paying 30,000 tokens per query.** This bridge implements Anthropic's discovery pattern with rootless security—reducing MCP context from 30K to 200 tokens while proxying any stdio server.
 
@@ -15,10 +15,10 @@
 
 This bridge implements the **"Code Execution with MCP"** pattern, a convergence of ideas from industry leaders:
 
-*   **Apple's [CodeAct](https://machinelearning.apple.com/research/codeact)**: "Your LLM Agent Acts Better when Generating Code."
-*   **Anthropic's [Code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp)**: "Building more efficient agents."
-*   **Cloudflare's [Code Mode](https://blog.cloudflare.com/code-mode/)**: "LLMs are better at writing code to call MCP, than at calling MCP directly."
-*   **Docker's [Dynamic MCPs](https://www.docker.com/blog/dynamic-mcps-stop-hardcoding-your-agents-world/)**: "Stop Hardcoding Your Agents’ World."
+- **Apple's [CodeAct](https://machinelearning.apple.com/research/codeact)**: "Your LLM Agent Acts Better when Generating Code."
+- **Anthropic's [Code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp)**: "Building more efficient agents."
+- **Cloudflare's [Code Mode](https://blog.cloudflare.com/code-mode/)**: "LLMs are better at writing code to call MCP, than at calling MCP directly."
+- **Docker's [Dynamic MCPs](https://www.docker.com/blog/dynamic-mcps-stop-hardcoding-your-agents-world/)**: "Stop Hardcoding Your Agents’ World."
 
 Instead of exposing hundreds of individual tools to the LLM (which consumes massive context and confuses the model), this bridge exposes **one** tool: `run_python`. The LLM writes Python code to discover, call, and compose other tools.
 
@@ -58,7 +58,7 @@ Connect Claude to 11 MCP servers with ~100 tools = **30,000 tokens** of tool sch
 
 ### Architecture: How It Differs
 
-```
+```text
 Traditional MCP (Context-Bound)
 ┌─────────────────────────────┐
 │   LLM Context (30K tokens)  │
@@ -107,13 +107,13 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 1. **Two-stage discovery** – `discovered_servers()` reveals what exists; `query_tool_docs(name)` loads only the schemas you need.
 2. **Fuzzy search across servers** – let the model find tools without memorising catalog names:
 
-   ```python
-   from mcp import runtime
+    ```python
+    from mcp import runtime
 
-   matches = await runtime.search_tool_docs("calendar events", limit=5)
-   for hit in matches:
-  print(hit["server"], hit["tool"], hit.get("description", ""))
-   ```
+    matches = await runtime.search_tool_docs("calendar events", limit=5)
+    for hit in matches:
+        print(hit["server"], hit["tool"], hit.get("description", ""))
+    ```
 
 3. **Zero-copy proxying** – every tool call stays within the sandbox, mirrored over stdio with strict timeouts.
 4. **Rootless by default** – Podman/Docker containers run with `--cap-drop=ALL`, read-only root, no-new-privileges, and explicit memory/PID caps.
@@ -129,6 +129,7 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 ## Key Features
 
 ### 🔒 Security First
+
 - **Rootless containers** - No privileged helpers required
 - **Network isolation** - No network access
 - **Read-only filesystem** - Immutable root
@@ -138,28 +139,34 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 - **Auto-cleanup** - Temporary IPC directories
 
 ### ⚡ Performance
+
 - **Persistent clients** - MCP servers stay warm
 - **Context efficiency** - 95%+ reduction vs traditional MCP
 - **Async execution** - Proper resource management
 - **Single tool** - Only `run_python` in Claude's context
 
 ### 🔧 Developer Experience
+
 - **Multiple access patterns**:
+
   ```python
   mcp_servers["server"]           # Dynamic lookup
   mcp_server_name                 # Attribute access
   from mcp.servers.server import * # Module import
   ```
+
 - **Top-level await** - Modern Python patterns
 - **Type-safe** - Proper signatures and docs
 - **Compact responses** - Plain-text output by default with optional TOON blocks when requested
 
 ### Response Formats
+
 - **Default (compact)** – responses render as plain text plus a minimal `structuredContent` payload containing only non-empty fields. `stdout`/`stderr` lines stay intact, so prompts remain lean without sacrificing content.
 - **Optional TOON** – set `MCP_BRIDGE_OUTPUT_MODE=toon` to emit [Token-Oriented Object Notation](https://github.com/toon-format/toon) blocks. We still drop empty fields and mirror the same structure in `structuredContent`; TOON is handy when you want deterministic tokenisation for downstream prompts.
 - **Fallback JSON** – if the TOON encoder is unavailable we automatically fall back to pretty JSON blocks while preserving the trimmed payload.
 
 ### Discovery Workflow
+
 - `SANDBOX_HELPERS_SUMMARY` in the tool schema only advertises the discovery helpers (`discovered_servers()`, `list_servers()`, `query_tool_docs()`, `search_tool_docs()`, etc.). It never includes individual server or tool documentation.
 - On first use the LLM typically calls `discovered_servers()` (or `list_servers_sync()` for the cached list) to enumerate MCP servers, then `query_tool_docs(server)` / `query_tool_docs_sync(server)` or `search_tool_docs("keyword")` / `search_tool_docs_sync("keyword")` to fetch the relevant subset of documentation.
 - Tool metadata is streamed on demand, keeping the system prompt at roughly 200 tokens regardless of how many servers or tools are installed.
@@ -171,24 +178,26 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 
 ### 1. Prerequisites (macOS or Linux)
 
-  - Check version: `python3 --version`
-  - If needed, install Python 3.14 via package manager or [python.org](https://python.org)
-  - macOS: `brew install podman` or `brew install --cask docker`
-  - Ubuntu/Debian: `sudo apt-get install -y podman` or `curl -fsSL https://get.docker.com | sh`
-  ```bash
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  ```
-  ```bash
-  podman pull python:3.14-slim
-  # or
-  docker pull python:3.14-slim
-  ```
+- Check version: `python3 --version`
+- If needed, install Python 3.14 via package manager or [python.org](https://python.org)
+- macOS: `brew install podman` or `brew install --cask docker`
+- Ubuntu/Debian: `sudo apt-get install -y podman` or `curl -fsSL https://get.docker.com | sh`
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+```bash
+podman pull python:3.14-slim
+# or
+docker pull python:3.14-slim
+```
 
 Note on Pydantic compatibility (Python 3.14):
 
 - If you use Python 3.14, ensure you have a modern Pydantic release installed (for example, `pydantic >= 2.12.0`). Some older Pydantic versions or environments that install a separate `typing` package from PyPI may raise errors such as:
 
-```
+```text
 TypeError: _eval_type() got an unexpected keyword argument 'prefer_fwd_module'
 ```
 
@@ -245,7 +254,7 @@ uv run python mcp_server_code_execution_mode.py
 }
 ```
 
-**Restart Claude Code**
+### Restart Claude Code
 
 ### 4b. Register with OpenCode
 
@@ -270,7 +279,7 @@ If you use OpenCode, add the same MCP server entry to one of the OpenCode config
 }
 ```
 
-**Restart OpenCode**
+### Restart OpenCode
 
 ### 5. Execute Code
 
@@ -329,7 +338,7 @@ uv run pytest
 
 ## Architecture
 
-```
+```text
 ┌─────────────┐
 │ MCP Client  │ (Claude Code)
 └──────┬──────┘
@@ -358,6 +367,7 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 **Result:** context usage stays effectively constant no matter how many MCP servers you configure.
 
 **Process:**
+
 1. Client calls `run_python(code, servers, timeout)`
 2. Bridge loads requested MCP servers
 3. Prepares a sandbox invocation: collects MCP tool metadata, writes an entrypoint into a shared `/ipc` volume, and exports `MCP_AVAILABLE_SERVERS`
@@ -387,6 +397,7 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 ### Server Discovery
 
 **Scanned Locations:**
+
 - `~/.claude.json`
 - `~/Library/Application Support/Claude Code/claude_code_config.json`
 - `~/Library/Application Support/Claude/claude_code_config.json` *(early Claude Code builds)*
@@ -397,6 +408,7 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 - `./mcp-servers/*.json`
 
 **Example Server** (`~/.config/mcp/servers/filesystem.json`):
+
 ```json
 {
   "mcpServers": {
@@ -514,7 +526,7 @@ print("Search from cache:", runtime.search_tool_docs_sync("calendar"))
 
 Example output seen by the LLM when running the snippet above with the stub server:
 
-```
+```text
 Discovered: ('stub',)
 Loaded metadata: ({'name': 'stub', 'alias': 'stub', 'tools': [{'name': 'echo', 'alias': 'echo', 'description': 'Echo the provided message', 'input_schema': {...}}]},)
 Selectable via RPC: ('stub',)
@@ -564,6 +576,7 @@ servers explicitly.
 ## Resources
 
 ### External
+
 - [Code Execution with MCP (Anthropic)](https://www.anthropic.com/engineering/code-execution-with-mcp)
 - [Code Mode (Cloudflare)](https://blog.cloudflare.com/code-mode/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
@@ -573,6 +586,7 @@ servers explicitly.
 ## Status
 
 ### ✅ Implemented
+
 - Rootless container sandbox
 - Single `run_python` tool
 - MCP server proxying
@@ -580,12 +594,14 @@ servers explicitly.
 - Comprehensive docs
 
 ### 🔄 In Progress
+
 - Automated testing
 - Observability (logging, metrics)
 - Policy controls
 - Runtime diagnostics
 
 ### 📋 Roadmap
+
 - Connection pooling
 - Web UI
 - Multi-language support
