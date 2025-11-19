@@ -139,10 +139,11 @@ _PODMAN_PULL_PREFIXES: tuple[str, ...] = (
 )
 
 SANDBOX_HELPERS_SUMMARY = (
-    "Helpers (after `import mcp.runtime as runtime`): await runtime.list_servers() or call runtime.list_servers_sync(), "
-    "runtime.discovered_servers(), runtime.list_tools_sync(server), runtime.query_tool_docs[_sync], "
-    "runtime.search_tool_docs[_sync], runtime.describe_server(name) (includes 'cwd' if configured), runtime.list_loaded_server_metadata(), runtime.capability_summary() "
-    "(prints this digest). Loaded servers also expose mcp_<alias> proxies."
+    "Python Sandbox. "
+    "1. DISCOVER: `runtime.discovered_servers()`, `runtime.search_tool_docs('query')`. "
+    "2. CALL: `await mcp_server.tool()`. "
+    "3. PERSIST: `save_tool(func)`. "
+    "Run `print(runtime.capability_summary())` for the full manual."
 )
 
 _NOISE_STREAM_TOKENS = {"()"}
@@ -805,12 +806,15 @@ class RootlessContainerSandbox:
                     'Raised when an MCP call fails.'
 
                 _CAPABILITY_SUMMARY = (
-                    "locked-down Python sandbox; load MCP servers via the 'servers' argument. "
-                    "YOU CAN DEFINE NEW TOOLS: Write a Python function and call `save_tool(func)` to persist it. "
-                    "After `import mcp.runtime as runtime`, "
-                    "use runtime.list_servers_sync()/await runtime.list_servers(), runtime.discovered_servers(), runtime.list_tools_sync(server), "
-                    "runtime.query_tool_docs[_sync], runtime.search_tool_docs[_sync], runtime.describe_server(), runtime.list_loaded_server_metadata(), "
-                    "runtime.capability_summary(). Loaded servers expose mcp_<alias> proxies."
+                    "--- PYTHON SANDBOX MANUAL ---\\n"
+                    "1. PHILOSOPHY: You are in a persistent Python environment. Prefer writing code over calling tools when possible.\\n"
+                    "2. DISCOVERY: Use `runtime.discovered_servers()` to list servers. Use `runtime.search_tool_docs('query')` to find tools. "
+                    "Don't guess tool names; search first.\\n"
+                    "3. PERSISTENCE: You can save your own tools! Define a Python function and call `save_tool(func)`. "
+                    "It will be saved to `~/MCPs/user_tools.py` and auto-loaded in future sessions.\\n"
+                    "4. HELPERS: `import mcp.runtime as runtime`. Available: list_servers(), list_tools_sync(server), "
+                    "query_tool_docs(server), describe_server(name).\\n"
+                    "5. PROXIES: Loaded servers are available as `mcp_<alias>` (e.g. `await mcp_filesystem.read_file(...)`)."
                 )
 
                 _LOADED_SERVER_NAMES = tuple(server.get("name") for server in AVAILABLE_SERVERS)
