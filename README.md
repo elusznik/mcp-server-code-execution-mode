@@ -402,7 +402,17 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 - `~/Library/Application Support/Claude Code/claude_code_config.json`
 - `~/Library/Application Support/Claude/claude_code_config.json` *(early Claude Code builds)*
 - `~/Library/Application Support/Claude/claude_desktop_config.json` *(Claude Desktop fallback)*
+- `~/.gemini/settings.json` *(Gemini CLI)*
+- `~/.codex/config.toml` *(OpenAI Codex)*
+- `~/.cursor/mcp.json` *(Cursor)*
+- `~/.codeium/windsurf/mcp_config.json` *(Windsurf)*
+- `.vscode/mcp.json` *(VS Code Workspace)*
+- `~/Library/Application Support/Code/User/settings.json` *(VS Code Global - macOS)*
+- `~/.config/Code/User/settings.json` *(VS Code Global - Linux)*
+- `~/.antigravity/settings.json` *(Antigravity IDE)*
+- `~/.antigravity/mcp.json` *(Antigravity IDE)*
 - `~/.config/mcp/servers/*.json`
+- `~/MCPs/*.json`
 - `./claude_code_config.json`
 - `./claude_desktop_config.json` *(project-local fallback)*
 - `./mcp-servers/*.json`

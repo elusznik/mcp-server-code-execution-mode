@@ -192,6 +192,7 @@ CONFIG_DIRS = [
     Path.home() / ".config" / "mcp" / "servers",
     Path.home() / "Library" / "Application Support" / "Claude Code" / "mcp" / "servers",
     Path.home() / "Library" / "Application Support" / "Claude" / "mcp" / "servers",
+    Path.home() / "MCPs",
     Path.cwd() / "mcp-servers",
 ]
 CLAUDE_CONFIG_PATHS = [
@@ -255,9 +256,6 @@ VSCODE_CONFIG_PATHS = [
 VSCODE_GLOBAL_CONFIG_PATHS = [
     Path.home() / "Library" / "Application Support" / "Code" / "User" / "settings.json",
     Path.home() / ".config" / "Code" / "User" / "settings.json",
-    Path(os.path.expandvars("%APPDATA%")) / "Code" / "User" / "settings.json"
-    if sys.platform == "win32"
-    else Path("nonexistent"),
 ]
 
 ANTIGRAVITY_CONFIG_PATHS = [
