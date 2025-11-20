@@ -245,35 +245,9 @@ If you prefer to run from a local checkout, the equivalent command is:
 uv run python mcp_server_code_execution_mode.py
 ```
 
-### 4. Register with Claude Code
+### 4. Register with Your Agent
 
-**File**: `~/.config/mcp/servers/mcp-server-code-execution-mode.json`
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-code-execution-mode": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/elusznik/mcp-server-code-execution-mode",
-        "mcp-server-code-execution-mode",
-        "run"
-      ],
-      "env": {
-        "MCP_BRIDGE_RUNTIME": "podman"
-      }
-    }
-  }
-}
-```
-
-### Restart Claude Code
-
-### 4b. Register with OpenCode
-
-If you use OpenCode, add the same MCP server entry to one of the OpenCode configuration files, for example `~/.opencode.json` or `~/Library/Application Support/OpenCode/opencode_config.json`.
+Add the following server configuration to your agent's MCP settings file (e.g., `mcp_config.json`, `claude_desktop_config.json`, etc.):
 
 ```json
 {
@@ -293,8 +267,6 @@ If you use OpenCode, add the same MCP server entry to one of the OpenCode config
   }
 }
 ```
-
-### Restart OpenCode
 
 ### 5. Execute Code
 
@@ -355,7 +327,7 @@ uv run pytest
 
 ```text
 ┌─────────────┐
-│ MCP Client  │ (Claude Code)
+│ MCP Client  │ (Your Agent)
 └──────┬──────┘
        │ stdio
        ▼
@@ -411,28 +383,13 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
 
 ### Server Discovery
 
-**Scanned Locations:**
+**Primary Location:**
 
-- `~/.claude.json`
-- `~/Library/Application Support/Claude Code/claude_code_config.json`
-- `~/Library/Application Support/Claude/claude_code_config.json` *(early Claude Code builds)*
-- `~/Library/Application Support/Claude/claude_desktop_config.json` *(Claude Desktop fallback)*
-- `~/.gemini/settings.json` *(Gemini CLI)*
-- `~/.codex/config.toml` *(OpenAI Codex)*
-- `~/.cursor/mcp.json` *(Cursor)*
-- `~/.codeium/windsurf/mcp_config.json` *(Windsurf)*
-- `.vscode/mcp.json` *(VS Code Workspace)*
-- `~/Library/Application Support/Code/User/settings.json` *(VS Code Global - macOS)*
-- `~/.config/Code/User/settings.json` *(VS Code Global - Linux)*
-- `~/.antigravity/settings.json` *(Antigravity IDE)*
-- `~/.antigravity/mcp.json` *(Antigravity IDE)*
-- `~/.config/mcp/servers/*.json`
-- `~/MCPs/*.json`
-- `./claude_code_config.json`
-- `./claude_desktop_config.json` *(project-local fallback)*
-- `./mcp-servers/*.json`
+- `~/MCPs/*.json` (Recommended)
 
-**Example Server** (`~/.config/mcp/servers/filesystem.json`):
+> **Note:** Support for scanning individual agent configuration files (e.g., `.claude.json`, `.vscode/mcp.json`) is currently **postponed**. Please place all your MCP server definitions .jsons in the `~/MCPs` directory to ensure they are discovered.
+
+**Example Server** (`~/MCPs/filesystem.json`):
 
 ```json
 {
