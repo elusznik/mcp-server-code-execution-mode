@@ -706,6 +706,11 @@ class RootlessContainerSandbox:
         self._shared_paths: set[str] = set()
 
     def _base_cmd(self) -> List[str]:
+        if not self.runtime:
+            raise SandboxError(
+                "No container runtime found. Install podman or rootless docker and set "
+                "MCP_BRIDGE_RUNTIME if multiple runtimes are available."
+            )
         cmd: List[str] = [
             self.runtime,
             "run",
@@ -1235,6 +1240,8 @@ class RootlessContainerSandbox:
         return process.returncode, stdout_text, stderr_text
 
     async def _stop_runtime(self) -> None:
+        if not self.runtime:
+            return
         runtime_name = os.path.basename(self.runtime)
         if "podman" not in runtime_name:
             return
@@ -1277,6 +1284,11 @@ class RootlessContainerSandbox:
     async def _ensure_runtime_ready(self) -> None:
         async with self._runtime_check_lock:
             await self._cancel_runtime_shutdown_timer()
+            if not self.runtime:
+                # We will fail later when trying to run the command, but for now
+                # we can't do any runtime specific checks
+                return
+
             runtime_name = os.path.basename(self.runtime)
             if "podman" not in runtime_name:
                 return
@@ -1361,6 +1373,11 @@ class RootlessContainerSandbox:
         ] = None,
     ) -> SandboxResult:
         await self._ensure_runtime_ready()
+        if not self.runtime:
+            raise SandboxError(
+                "No container runtime found. Install podman or rootless docker and set "
+                "MCP_BRIDGE_RUNTIME if multiple runtimes are available."
+            )
         if host_dir is None:
             raise SandboxError("Sandbox host directory is not available")
 
@@ -1508,7 +1525,7 @@ class RootlessContainerSandbox:
                 return
 
             shared = True
-            runtime_name = os.path.basename(self.runtime)
+            runtime_name = os.path.basename(self.runtime) if self.runtime else ""
             if "podman" in runtime_name:
                 shared = await self._ensure_podman_volume_shared(resolved)
 
@@ -1516,6 +1533,8 @@ class RootlessContainerSandbox:
                 self._shared_paths.add(path_str)
 
     async def _ensure_podman_volume_shared(self, path: Path) -> bool:
+        if not self.runtime:
+            return False
         share_spec = f"{path}:{path}"
         try:
             process = await asyncio.create_subprocess_exec(
@@ -1554,7 +1573,7 @@ class RootlessContainerSandbox:
     def _filter_runtime_stderr(self, text: str) -> str:
         """Strip known runtime pull chatter so successful runs stay quiet."""
 
-        if not text:
+        if not text or not self.runtime:
             return text
 
         runtime_name = os.path.basename(self.runtime).lower()
@@ -1573,8 +1592,8 @@ class RootlessContainerSandbox:
         return "\n".join(filtered_lines).strip("\n")
 
 
-def detect_runtime(preferred: Optional[str] = None) -> str:
-    """Return the first available container runtime."""
+def detect_runtime(preferred: Optional[str] = None) -> Optional[str]:
+    """Return the first available container runtime, or None if not found."""
 
     candidates: List[Optional[str]] = []
     if preferred:
@@ -1587,10 +1606,7 @@ def detect_runtime(preferred: Optional[str] = None) -> str:
         if candidate and shutil.which(candidate):
             return candidate
 
-    raise SandboxError(
-        "No container runtime found. Install podman or rootless docker and set "
-        "MCP_BRIDGE_RUNTIME if multiple runtimes are available."
-    )
+    return None
 
 
 class SandboxInvocation:
