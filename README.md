@@ -126,7 +126,22 @@ Result: constant overhead. Whether you manage 10 or 1000 tools, the system promp
 - Security-conscious operators who need rootless isolation for LLM-generated code.
 - Practitioners who want to reuse existing MCP catalogs without hand-curating manifests.
 
+### Philosophy: The "No-MCP" Approach
+
+This server aligns with the philosophy that [you might not need MCP at all](https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/) for every little tool. Instead of building rigid MCP servers for simple tasks, you can use this server to give your agent **raw, sandboxed access to Bash and Python**.
+
+- **Ad-Hoc Tools**: Need a script to scrape a site or parse a file? Just write it and run it. No need to deploy a new MCP server.
+- **Composability**: Pipe outputs between commands, save intermediate results to files, and use standard Unix tools.
+- **Safety**: Unlike giving an agent raw shell access to your machine, this server runs everything in a secure, rootless container. You get the power of "Bash/Code" without the risk.
+
 ## Key Features
+
+### 🛡️ Robustness & Reliability
+
+- **Lazy Runtime Detection**: Starts up instantly even if Podman/Docker isn't ready. Checks for runtime only when code execution is requested.
+- **Self-Reference Prevention**: Automatically detects and skips configurations that would launch the bridge recursively.
+- **Noise Filtering**: Ignores benign JSON parse errors (like blank lines) from chatty MCP clients.
+- **Smart Volume Sharing**: Probes Podman VMs to ensure volume sharing works, even on older versions.
 
 ### 🔒 Security First
 

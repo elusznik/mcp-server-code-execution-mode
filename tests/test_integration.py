@@ -278,7 +278,9 @@ class StubIntegrationTests(unittest.IsolatedAsyncioTestCase):
             return DummyInitResult()
 
         with mock.patch.object(bridge_module, "stdio_client", fake_stdio_client):
-            with mock.patch.object(bridge_module.ClientSession, "initialize", fake_init):
+            with mock.patch.object(
+                bridge_module.ClientSession, "initialize", fake_init
+            ):
                 # Capture server-side logs for 'mcp.server.lowlevel.server'
                 log_stream = StringIO()
                 handler = logging.StreamHandler(log_stream)

@@ -2507,24 +2507,12 @@ async def call_tool(name: str, arguments: Dict[str, object]) -> CallToolResult:
 
 
 async def main() -> None:
-    # DEBUG LOGGING
-    import logging
-
-    logging.basicConfig(
-        filename="/tmp/mcp_debug.log",
-        level=logging.DEBUG,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    logging.info("Starting MCP Server Code Execution Mode...")
-
+    logging.basicConfig(level=os.environ.get("MCP_BRIDGE_LOG_LEVEL", "INFO"))
     try:
-        logging.info("Initializing stdio server...")
         async with stdio_server() as (read_stream, write_stream):
-            logging.info("Running app...")
             await app.run(
                 read_stream, write_stream, app.create_initialization_options()
             )
-            logging.info("App run finished.")
     except Exception:
         logging.exception("Fatal error in main loop")
         raise
