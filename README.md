@@ -444,7 +444,7 @@ When you rely on `docker mcp gateway run` to expose third-party MCP servers, the
 ### State Directory & Volume Sharing
 
 - Runtime artifacts (including the generated `/ipc/entrypoint.py` and related handshake metadata) live under `~/MCPs/` by default. Set `MCP_BRIDGE_STATE_DIR` to relocate them.
-- When the selected runtime is Podman, the bridge automatically issues `podman machine set --rootful --now --volume <state_dir>:<state_dir>` so the VM can mount the directory.
+- When the selected runtime is Podman, the bridge automatically issues `podman machine set --rootful --now --volume <state_dir>:<state_dir>` so the VM can mount the directory. On older `podman machine` builds that do not support `--volume`, the bridge now probes the VM with `podman machine ssh test -d <state_dir>` and proceeds if the share is already available.
 - Docker Desktop does not expose a CLI for file sharing; ensure the chosen state directory is marked as shared in Docker Desktop → Settings → Resources → File Sharing before running the bridge.
 - To verify a share manually, run `docker run --rm -v ~/MCPs:/ipc alpine ls /ipc` (or the Podman equivalent) and confirm the files are visible.
 

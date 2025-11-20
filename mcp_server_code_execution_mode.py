@@ -10,6 +10,7 @@ import keyword
 import logging
 import os
 import re
+import shlex
 import shutil
 import sys
 
@@ -1661,11 +1662,48 @@ class RootlessContainerSandbox:
         if "already exists" in lower or "would overwrite" in lower:
             return True
 
+        if "unknown flag: --volume" in lower or "unrecognized option '--volume'" in lower:
+            if await self._podman_share_already_available(path):
+                logger.info(
+                    "Podman runtime already exposes %s; skipping --volume configuration",
+                    path,
+                )
+                return True
+
         logger.debug(
             "Failed to ensure podman shared volume for %s (exit %s): %s",
             path,
             process.returncode,
             stderr_text.strip() or stdout_bytes.decode(errors="replace").strip(),
+        )
+        return False
+
+    async def _podman_share_already_available(self, path: Path) -> bool:
+        if not self.runtime:
+            return False
+        quoted = shlex.quote(str(path))
+        try:
+            process = await asyncio.create_subprocess_exec(
+                self.runtime,
+                "machine",
+                "ssh",
+                f"test -d {quoted}",
+                stdout=aio_subprocess.PIPE,
+                stderr=aio_subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            return False
+
+        stdout_bytes, stderr_bytes = await process.communicate()
+        if process.returncode == 0:
+            return True
+
+        logger.debug(
+            "Podman VM does not see %s (exit %s): %s",
+            path,
+            process.returncode,
+            stderr_bytes.decode(errors="replace").strip()
+            or stdout_bytes.decode(errors="replace").strip(),
         )
         return False
 
