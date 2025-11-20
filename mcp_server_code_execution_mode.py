@@ -212,124 +212,125 @@ class ConfigSource(NamedTuple):
 
 
 CONFIG_SOURCES = [
-    # Directories (scan for *.json)
-    ConfigSource(
-        Path.home() / ".config" / "mcp" / "servers", "directory", name="Standard MCP"
-    ),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "Claude Code"
-        / "mcp"
-        / "servers",
-        "directory",
-        name="Claude Code",
-    ),
-    ConfigSource(
-        Path.home() / "Library" / "Application Support" / "Claude" / "mcp" / "servers",
-        "directory",
-        name="Claude Desktop",
-    ),
+    # Only load configs from the MCPs directory for now.
     ConfigSource(Path.home() / "MCPs", "directory", name="User MCPs"),
-    ConfigSource(Path.cwd() / "mcp-servers", "directory", name="Local Project"),
-    # Claude / OpenCode Files
-    ConfigSource(Path.home() / ".claude.json", "file", name="Claude CLI"),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "Claude Code"
-        / "claude_code_config.json",
-        "file",
-        name="Claude Code",
-    ),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "Claude"
-        / "claude_code_config.json",
-        "file",
-        name="Claude Code (Legacy)",
-    ),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "Claude"
-        / "claude_desktop_config.json",
-        "file",
-        name="Claude Desktop",
-    ),
-    ConfigSource(
-        Path.cwd() / "claude_code_config.json", "file", name="Local Claude Code"
-    ),
-    ConfigSource(
-        Path.cwd() / "claude_desktop_config.json", "file", name="Local Claude Desktop"
-    ),
-    ConfigSource(Path.home() / ".opencode.json", "file", name="OpenCode CLI"),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "OpenCode"
-        / "opencode_config.json",
-        "file",
-        name="OpenCode",
-    ),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "OpenCode"
-        / "opencode_desktop_config.json",
-        "file",
-        name="OpenCode Desktop",
-    ),
-    ConfigSource(Path.cwd() / "opencode_config.json", "file", name="Local OpenCode"),
-    ConfigSource(
-        Path.cwd() / "opencode_desktop_config.json",
-        "file",
-        name="Local OpenCode Desktop",
-    ),
-    # Other Clients
-    ConfigSource(Path.home() / ".gemini" / "settings.json", "file", name="Gemini CLI"),
-    ConfigSource(
-        Path.home() / ".codex" / "config.toml",
-        "file",
-        format="toml",
-        name="OpenAI Codex",
-    ),
-    ConfigSource(Path.home() / ".cursor" / "mcp.json", "file", name="Cursor"),
-    ConfigSource(
-        Path.home() / ".codeium" / "windsurf" / "mcp_config.json",
-        "file",
-        name="Windsurf",
-    ),
-    ConfigSource(Path.cwd() / ".vscode" / "mcp.json", "file", name="VS Code Workspace"),
-    ConfigSource(
-        Path.home()
-        / "Library"
-        / "Application Support"
-        / "Code"
-        / "User"
-        / "settings.json",
-        "file",
-        name="VS Code Global (macOS)",
-    ),
-    ConfigSource(
-        Path.home() / ".config" / "Code" / "User" / "settings.json",
-        "file",
-        name="VS Code Global (Linux)",
-    ),
-    ConfigSource(
-        Path.home() / ".antigravity" / "settings.json", "file", name="Antigravity IDE"
-    ),
-    ConfigSource(
-        Path.home() / ".antigravity" / "mcp.json", "file", name="Antigravity IDE"
-    ),
 ]
+
+"""Temporarily disabled config sources (kept for reference):
+ConfigSource(
+    Path.home() / ".config" / "mcp" / "servers", "directory", name="Standard MCP"
+),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Claude Code"
+    / "mcp"
+    / "servers",
+    "directory",
+    name="Claude Code",
+),
+ConfigSource(
+    Path.home() / "Library" / "Application Support" / "Claude" / "mcp" / "servers",
+    "directory",
+    name="Claude Desktop",
+),
+ConfigSource(Path.cwd() / "mcp-servers", "directory", name="Local Project"),
+ConfigSource(Path.home() / ".claude.json", "file", name="Claude CLI"),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Claude Code"
+    / "claude_code_config.json",
+    "file",
+    name="Claude Code",
+),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Claude"
+    / "claude_code_config.json",
+    "file",
+    name="Claude Code (Legacy)",
+),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Claude"
+    / "claude_desktop_config.json",
+    "file",
+    name="Claude Desktop",
+),
+ConfigSource(
+    Path.cwd() / "claude_code_config.json", "file", name="Local Claude Code"
+),
+ConfigSource(
+    Path.cwd() / "claude_desktop_config.json", "file", name="Local Claude Desktop"
+),
+ConfigSource(Path.home() / ".opencode.json", "file", name="OpenCode CLI"),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "OpenCode"
+    / "opencode_config.json",
+    "file",
+    name="OpenCode",
+),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "OpenCode"
+    / "opencode_desktop_config.json",
+    "file",
+    name="OpenCode Desktop",
+),
+ConfigSource(Path.cwd() / "opencode_config.json", "file", name="Local OpenCode"),
+ConfigSource(
+    Path.cwd() / "opencode_desktop_config.json",
+    "file",
+    name="Local OpenCode Desktop",
+),
+ConfigSource(Path.home() / ".gemini" / "settings.json", "file", name="Gemini CLI"),
+ConfigSource(
+    Path.home() / ".codex" / "config.toml",
+    "file",
+    format="toml",
+    name="OpenAI Codex",
+),
+ConfigSource(Path.home() / ".cursor" / "mcp.json", "file", name="Cursor"),
+ConfigSource(
+    Path.home() / ".codeium" / "windsurf" / "mcp_config.json",
+    "file",
+    name="Windsurf",
+),
+ConfigSource(Path.cwd() / ".vscode" / "mcp.json", "file", name="VS Code Workspace"),
+ConfigSource(
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Code"
+    / "User"
+    / "settings.json",
+    "file",
+    name="VS Code Global (macOS)",
+),
+ConfigSource(
+    Path.home() / ".config" / "Code" / "User" / "settings.json",
+    "file",
+    name="VS Code Global (Linux)",
+),
+ConfigSource(
+    Path.home() / ".antigravity" / "settings.json", "file", name="Antigravity IDE"
+),
+ConfigSource(
+    Path.home() / ".antigravity" / "mcp.json", "file", name="Antigravity IDE"
+),
+"""
 
 
 class SandboxError(RuntimeError):
