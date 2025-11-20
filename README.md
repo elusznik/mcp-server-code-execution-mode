@@ -428,6 +428,8 @@ Unlike traditional MCP servers that preload every tool definition (sometimes 30k
     }
   }
 }
+
+> **Note:** To prevent recursive launches, the bridge automatically skips any config entry that appears to start `mcp-server-code-execution-mode` again (including `uvx … mcp-server-code-execution-mode run`). Set `MCP_BRIDGE_ALLOW_SELF_SERVER=1` if you intentionally need to expose the bridge as a nested MCP server.
 ```
 
 ### Docker MCP Gateway Integration

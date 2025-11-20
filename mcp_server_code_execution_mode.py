@@ -136,6 +136,16 @@ CONTAINER_USER = os.environ.get("MCP_BRIDGE_CONTAINER_USER", "65534:65534")
 DEFAULT_RUNTIME_IDLE_TIMEOUT = int(
     os.environ.get("MCP_BRIDGE_RUNTIME_IDLE_TIMEOUT", "300")
 )
+_ALLOW_SELF_SERVER = os.environ.get("MCP_BRIDGE_ALLOW_SELF_SERVER", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
+_SELF_SERVER_TOKENS = {
+    BRIDGE_NAME.lower(),
+    "mcp_server_code_execution_mode",
+    "mcp-server-code-execution-mode",
+}
 
 _PODMAN_PULL_PREFIXES: tuple[str, ...] = (
     'Resolved "',
@@ -380,6 +390,32 @@ class MCPServerInfo:
     args: List[str]
     env: Dict[str, str]
     cwd: Optional[str] = None
+
+
+def _looks_like_self_server(info: MCPServerInfo) -> bool:
+    """Return True if the config appears to launch this bridge itself."""
+
+    name = info.name.lower()
+    if name in _SELF_SERVER_TOKENS:
+        return True
+
+    command_name = Path(info.command).name.lower()
+    if command_name in _SELF_SERVER_TOKENS or command_name.endswith(
+        "mcp_server_code_execution_mode.py"
+    ):
+        return True
+
+    for arg in info.args:
+        arg_lower = str(arg).lower()
+        arg_name = Path(arg_lower).name
+        if (
+            arg_lower in _SELF_SERVER_TOKENS
+            or arg_name.lower() in _SELF_SERVER_TOKENS
+            or arg_lower.endswith("mcp_server_code_execution_mode.py")
+        ):
+            return True
+
+    return False
 
 
 def _split_output_lines(stream: Optional[str]) -> List[str]:
@@ -1905,11 +1941,20 @@ class MCPBridge:
                 if name in self.servers:
                     continue
                 info = self._parse_server_config(name, value)
-                if info:
-                    self.servers[name] = info
+                if not info:
+                    continue
+                if not _ALLOW_SELF_SERVER and _looks_like_self_server(info):
                     logger.info(
-                        "Found MCP server %s in %s (%s)", name, path, source_name
+                        "Skipping self-referential MCP server %s from %s (%s)",
+                        name,
+                        path,
+                        source_name,
                     )
+                    continue
+                self.servers[name] = info
+                logger.info(
+                    "Found MCP server %s in %s (%s)", name, path, source_name
+                )
         except Exception as exc:
             logger.warning("Failed to read %s: %s", path, exc)
 
