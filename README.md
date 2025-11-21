@@ -118,7 +118,7 @@ The agent writes a **single Python script** that performs discovery, logic, and 
 
 ### Vs. OneMCP (Gentoro)
 
-OneMCP provides a "Handbook" chat interface where you ask questions and it plans execution. This is great for simple queries but turns the execution into a **black box**.
+[OneMCP](https://github.com/Gentoro-OneMCP/onemcp) provides a "Handbook" chat interface where you ask questions and it plans execution. This is great for simple queries but turns the execution into a **black box**.
 
 **This Bridge** gives the agent **raw, sandboxed control**. The agent isn't asking a black box to "do it"; the agent *is* the programmer, writing the exact code to interact with the API. This allows for precise edge-case handling and complex data processing that a natural language planner might miss.
 
