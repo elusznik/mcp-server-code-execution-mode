@@ -1,5 +1,6 @@
 # MCP Code Execution Server: Zero-Context Discovery for 100+ MCP Tools
 
+[![AgentAudit Safe](https://img.shields.io/badge/AgentAudit-Safe-green?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAxTDMgNXY2YzAgNS41NSAzLjg0IDEwLjc0IDkgMTIgNS4xNi0xLjI2IDktNi40NSA5LTEyVjVsLTktNHoiLz48L3N2Zz4=)](https://www.agentaudit.dev/package/mcp-server-code-execution-mode)
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/elusznik-mcp-server-code-execution-mode-badge.png)](https://mseep.ai/app/elusznik-mcp-server-code-execution-mode)
 
 **Stop paying 30,000 tokens per query.** This bridge implements Anthropic's discovery pattern with rootless security—reducing MCP context from 30K to 200 tokens while proxying any stdio server.
