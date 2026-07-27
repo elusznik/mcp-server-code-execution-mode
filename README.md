@@ -1,5 +1,7 @@
 # MCP Code Execution Server: Zero-Context Discovery for 100+ MCP Tools
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Felusznik%2Fmcp-server-code-execution-mode.svg)](https://mcptoplist.com/server/glama%2Felusznik%2Fmcp-server-code-execution-mode)
+
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/elusznik-mcp-server-code-execution-mode-badge.png)](https://mseep.ai/app/elusznik-mcp-server-code-execution-mode)
 
 **Stop paying 30,000 tokens per query.** This bridge implements Anthropic's discovery pattern with rootless security—reducing MCP context from 30K to 200 tokens while proxying any stdio server.
